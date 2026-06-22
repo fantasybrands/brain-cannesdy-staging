@@ -10646,8 +10646,48 @@ document.addEventListener("click", ev => {
 function selYear(v){
   curYear = (v === "all") ? "all" : Number(v);
   curIdx = 0;
+  updateSidebarForYear();
   if(mode === "insights") renderInsights();
   else refresh();
+}
+
+// ─────────────────────────────────────────────
+// YEAR-AWARE SIDEBAR — hide categories with no winners in the selected year.
+// A Cannes category only "exists" in years where it has wins, so showing it in
+// a year with zero winners (e.g. Creative Brand in 2025) is misleading. "All"
+// is always visible. A group header hides when every category beneath it (up to
+// the next header) is hidden. In the "All Years" view everything with any entry
+// shows.
+// ─────────────────────────────────────────────
+function catHasEntriesForYear(cat){
+  const items = DATA[cat];
+  if(!items || !items.length) return false;
+  if(curYear === "all" || curYear == null) return true;
+  return items.some(e => e && Number(e.year) === Number(curYear));
+}
+function updateSidebarForYear(){
+  const scroll = document.querySelector(".sb-scroll");
+  if(!scroll) return;
+  const nodes = Array.from(scroll.children);
+  // First pass: show/hide each category row.
+  nodes.forEach(n => {
+    if(!n.classList || !n.classList.contains("sb-cat")) return;
+    const cat = n.dataset.cat;
+    if(cat === "All"){ n.style.display = ""; return; }   // All is always visible
+    n.style.display = catHasEntriesForYear(cat) ? "" : "none";
+  });
+  // Second pass: hide a group header when all its categories are hidden.
+  nodes.forEach((n, i) => {
+    if(!n.classList || !n.classList.contains("sb-group")) return;
+    let anyVisible = false;
+    for(let j = i + 1; j < nodes.length; j++){
+      const m = nodes[j];
+      if(!m || !m.classList) continue;
+      if(m.classList.contains("sb-group") || m.classList.contains("sb-sec")) break;
+      if(m.classList.contains("sb-cat") && m.style.display !== "none"){ anyVisible = true; break; }
+    }
+    n.style.display = anyVisible ? "" : "none";
+  });
 }
 
 // ─────────────────────────────────────────────
@@ -11210,6 +11250,9 @@ document.getElementById("pwi").addEventListener("keydown",e=>{
 
 // Populate the year selector from DATA
 initYearSelect();
+
+// Hide categories that have no winners in the current (default = newest) year.
+updateSidebarForYear();
 
 // Init Firebase for global likes
 initFirebase();
