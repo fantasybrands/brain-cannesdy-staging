@@ -11045,6 +11045,40 @@ function stopVideo(youtubeId, searchUrl){
   if(fl) fl.remove();
 }
 
+// Shown for entries that have no real case-study video on file (no youtubeId).
+// Displays the "Case Study Video Missing — Please Check Back Later" placeholder
+// frame in the video area instead of opening a YouTube search.
+function showVideoMissing(){
+  track("video_missing", { campaign: (entries[curIdx]||{}).campaign });
+  const img = document.getElementById('mdl-img');
+  let vw = document.getElementById('mdl-video-wrap');
+  if(!vw){
+    vw = document.createElement('div');
+    vw.id = 'mdl-video-wrap';
+    vw.className = 'mdl-video-wrap';
+    img.parentNode.insertBefore(vw, img);
+  }
+  vw.innerHTML = '<img src="BC_CSV_Missing.jpg" alt="Case Study Video Not Currently Available. Please check back later." style="width:100%;height:100%;object-fit:cover;display:block">';
+  img.style.display = 'none';
+  vw.style.display = 'block';
+  const btn = document.getElementById('mdl-video-btn');
+  if(btn){
+    btn.innerHTML = '&#9632; Close';
+    btn.onclick = function(){ hideVideoMissing(); };
+  }
+}
+
+function hideVideoMissing(){
+  const vw = document.getElementById('mdl-video-wrap');
+  if(vw){ vw.innerHTML = ''; vw.style.display = 'none'; }
+  document.getElementById('mdl-img').style.display = '';
+  const btn = document.getElementById('mdl-video-btn');
+  if(btn){
+    btn.innerHTML = '&#9654; Watch Case Study <span style="opacity:.5;font-size:10px;margin-left:4px">[Space]</span>';
+    btn.onclick = function(){ showVideoMissing(); };
+  }
+}
+
 // ─────────────────────────────────────────────
 // MODAL
 // ─────────────────────────────────────────────
@@ -11104,8 +11138,10 @@ function openModal(){
   if(e.youtubeId){
     const sUrl = e.videoUrl||'';
     acts+=`<button class="ha p" id="mdl-video-btn" onclick="playVideo('${e.youtubeId}','${sUrl}')">&#9654; Watch Case Study <span style="opacity:.5;font-size:10px;margin-left:4px">[Space]</span></button>`;
-  } else if(e.videoUrl){
-    acts+=`<a class="ha p" id="mdl-video-btn" href="${e.videoUrl}" target="_blank">&#9654; Watch Case Study <span style="opacity:.5;font-size:10px;margin-left:4px">[Space]</span></a>`;
+  } else {
+    // No real case-study video on file. Instead of falling back to a YouTube
+    // search link, reveal the "Case Study Video Missing" placeholder frame.
+    acts+=`<button class="ha p" id="mdl-video-btn" onclick="showVideoMissing()">&#9654; Watch Case Study <span style="opacity:.5;font-size:10px;margin-left:4px">[Space]</span></button>`;
   }
   if(e.caseUrl)  acts+=`<a class="ha s" href="${e.caseUrl}" target="_blank">&#8599; Learn More</a>`;
   acts+=`<button class="mdl-share" id="mdl-share-btn" onclick="shareEntry(${e.id})">&#128279; Share</button>`;
